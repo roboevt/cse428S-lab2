@@ -58,4 +58,13 @@ class HoldEmGame : public Game {
     /// @param numPlayers Number of players
     /// @param playerNames Array of c-strings of player names
     HoldEmGame(int numPlayers, const char** playerNames);
+
+    struct Player{
+        CardSet<HoldEmRank, Suit> hand;
+        std::string& name;
+        HoldEmHandRank handRank;
+        Player(CardSet<HoldEmRank, Suit> hand, std::string& name, HoldEmHandRank handRank) : hand(hand), name(name), handRank(handRank) {}
+    };
 };
+
+bool operator<(const HoldEmGame::Player& lhs, const HoldEmGame::Player& rhs);

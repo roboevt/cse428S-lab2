@@ -4,6 +4,8 @@
 #include "HoldEmGame.h"
 
 #include <algorithm>
+#include <array>
+#include <optional>
 
 HoldEmGame::HoldEmGame(int numPlayers, const char** playerNames)
     : Game(numPlayers, playerNames), state(HoldEmState::preflop) {
@@ -101,13 +103,18 @@ void HoldEmGame::collectCards() {
 
 // Anonymous namespace for helper functions
 namespace {
+
+// Aliases to simplify helper function signatures
+using Pair = std::array<Card<HoldEmRank, Suit>, 2>;
+using Hand = std::vector<Card<HoldEmRank, Suit>>;
+
 /// @brief Check a hand for a straight flush
 /// @param hand The hand to check sorted by rank
 /// @return if all five cards are of the same suit and their ranks are consecutive (with the
 /// special rule that A 2 3 4 5 of the same suit and 10 J Q K A of the same suit are the lowest and
 /// highest valid straight flushes respectively, but that any hand with cards ranked K A 2 is not
 /// considered a straight flush)
-bool checkStraightFlush(const std::vector<Card<HoldEmRank, Suit>>& hand) {
+bool checkStraightFlush(const Hand& hand) {
     Suit suit = hand[0].suit;
     int rank = static_cast<int>(hand[0].rank);
 
@@ -139,7 +146,7 @@ bool checkStraightFlush(const std::vector<Card<HoldEmRank, Suit>>& hand) {
 /// @brief Check a hand for four of a kind
 /// @param hand The hand to check sorted by rank
 /// @return if four cards have the same rank
-bool checkFourOfAKind(const std::vector<Card<HoldEmRank, Suit>>& hand) {
+bool checkFourOfAKind(const Hand& hand) {
     bool isFourOfAKind = false;
 
     // Two cases, x x x x y or x y y y y
@@ -154,7 +161,7 @@ bool checkFourOfAKind(const std::vector<Card<HoldEmRank, Suit>>& hand) {
 /// @brief Check a hand for a full house
 /// @param hand The hand to check sorted by rank
 /// @return if three cards have the same rank and the other two cards have the same rank
-bool checkFullHouse(const std::vector<Card<HoldEmRank, Suit>>& hand) {
+bool checkFullHouse(const Hand& hand) {
     bool isFullHouse = false;
 
     // Two cases, x x x y y or x x y y y
@@ -170,7 +177,7 @@ bool checkFullHouse(const std::vector<Card<HoldEmRank, Suit>>& hand) {
 /// @brief Check a hand for a flush
 /// @param hand The hand to check sorted by rank
 /// @return  if all five cards are of the same suit
-bool checkFlush(const std::vector<Card<HoldEmRank, Suit>>& hand) {
+bool checkFlush(const Hand& hand) {
     Suit suit = hand[0].suit;
     bool isFlush = true;
     for (size_t i = 1; i < hand.size(); i++) {
@@ -187,7 +194,7 @@ bool checkFlush(const std::vector<Card<HoldEmRank, Suit>>& hand) {
 /// @return if the ranks of the cards are consecutive (with the special rule that A 2 3 4 5 and 10 J
 /// Q K A are the lowest and highest valid straights respectively, but any hand with cards ranked K
 /// A 2 is not considered a straight)
-bool checkStraight(const std::vector<Card<HoldEmRank, Suit>>& hand) {
+bool checkStraight(const Hand& hand) {
     int rank = static_cast<int>(hand[0].rank);
     bool isStraight = true;
     for (size_t i = 1; i < hand.size(); i++) {
@@ -216,9 +223,10 @@ bool checkStraight(const std::vector<Card<HoldEmRank, Suit>>& hand) {
 
 /// @brief Check a hand for three of a kind
 /// @param hand The hand to check sorted by rank
-/// @return if three cards have the same rank and the other two cards are of different ranks than any other cards in the hand
-bool checkThreeOfAKind(const std::vector<Card<HoldEmRank, Suit>>& hand) {
-    if(checkFourOfAKind(hand)) return false; // The other two cards must be different ranks
+/// @return if three cards have the same rank and the other two cards are of different ranks than
+/// any other cards in the hand
+bool checkThreeOfAKind(const Hand& hand) {
+    if (checkFourOfAKind(hand)) return false;  // The other two cards must be different ranks
 
     bool isThreeOfAKind = false;
 
@@ -237,10 +245,11 @@ bool checkThreeOfAKind(const std::vector<Card<HoldEmRank, Suit>>& hand) {
 
 /// @brief Check a hand for two pair
 /// @param hand The hand to check sorted by rank
-/// @return if two cards have the same rank and two other cards share a different rank and the fifth card is of yet another rank
-bool checkTwoPair(const std::vector<Card<HoldEmRank, Suit>>& hand) {
+/// @return if two cards have the same rank and two other cards share a different rank and the fifth
+/// card is of yet another rank
+bool checkTwoPair(const Hand& hand, Pair& pair1, Pair& pair2) {
     // Both pairs must be different and the other card must be different
-    if(checkFourOfAKind(hand) || checkFullHouse(hand)) return false;
+    if (checkFourOfAKind(hand) || checkFullHouse(hand)) return false;
 
     bool isTwoPair = false;
 
@@ -248,21 +257,34 @@ bool checkTwoPair(const std::vector<Card<HoldEmRank, Suit>>& hand) {
 
     if (hand[0].rank == hand[1].rank && hand[2].rank == hand[3].rank) {
         isTwoPair = true;
+        pair1 = {hand[0], hand[1]};
+        pair2 = {hand[2], hand[3]};
     } else if (hand[1].rank == hand[2].rank && hand[3].rank == hand[4].rank) {
         isTwoPair = true;
+        pair1 = {hand[1], hand[2]};
+        pair2 = {hand[3], hand[4]};
     } else if (hand[0].rank == hand[1].rank && hand[3].rank == hand[4].rank) {
         isTwoPair = true;
+        pair1 = {hand[0], hand[1]};
+        pair2 = {hand[3], hand[4]};
     }
 
     return isTwoPair;
 }
 
+bool checkTwoPair(const Hand& hand) {
+    Pair unused1, unused2;
+    return checkTwoPair(hand, unused1, unused2);
+}
+
 /// @brief Check a hand for a pair
 /// @param hand The hand to check sorted by rank
 /// @return if only two cards in the hand have the same rank
-bool checkPair(const std::vector<Card<HoldEmRank, Suit>>& hand) {
+bool checkPair(const Hand& hand, Pair& pair) {
     // The other three cards must be different ranks
-    if(checkFourOfAKind(hand) || checkFullHouse(hand) || checkThreeOfAKind(hand) || checkTwoPair(hand)) return false;
+    if (checkFourOfAKind(hand) || checkFullHouse(hand) || checkThreeOfAKind(hand) ||
+        checkTwoPair(hand))
+        return false;
 
     bool isPair = false;
 
@@ -270,15 +292,122 @@ bool checkPair(const std::vector<Card<HoldEmRank, Suit>>& hand) {
 
     if (hand[0].rank == hand[1].rank) {
         isPair = true;
+        pair = {hand[0], hand[1]};
     } else if (hand[1].rank == hand[2].rank) {
         isPair = true;
+        pair = {hand[1], hand[2]};
     } else if (hand[2].rank == hand[3].rank) {
         isPair = true;
+        pair = {hand[2], hand[3]};
     } else if (hand[3].rank == hand[4].rank) {
         isPair = true;
+        pair = {hand[3], hand[4]};
     }
 
     return isPair;
+}
+
+bool checkPair(const Hand& hand) {
+    Pair unused;
+    return checkPair(hand, unused);
+}
+
+// This would normally be a function but functions can not have auto parameters until C++20 and we
+// must use C++17 in this class.
+
+/// @brief Find the maximum card in a hand that is not in another hand
+/// @param hand Hand to search
+/// @param excluded Hand to exclude
+/// @return Maximum card accoring to compareRank() that is in hand but not in excluded
+const auto findMaxCardNotExcluded = [](const Hand& hand,
+                                       const auto& excluded) -> Card<HoldEmRank, Suit> {
+    Hand diff;
+
+    std::set_difference(hand.begin(), hand.end(), excluded.begin(), excluded.end(),
+                        std::inserter(diff, diff.begin()));
+
+    return *std::max_element(diff.begin(), diff.end());
+};
+
+/// @brief Check if a hand with a pair is less than another hand with a pair
+/// @param lHand Sorted hand with a pair
+/// @param rHand Sorted hand with a pair
+/// @return if the rank of the paired card of the first object is less than the rank of the paired
+/// card of second object, or if those are the same, if the highest-ranked non-paired card of the
+/// first object is less than that of the second object, or if those are the same if the
+/// second-highest-ranked non-paired card of the first object is less than that of the second
+/// object, or if those are the same if the third-highest-ranked non-paired card of the first object
+/// is less than that of the second object;
+bool pairLessThan(const Hand& lHand, const Hand& rHand) {
+    Pair lPair, rPair;
+    if (!checkPair(lHand, lPair)) throw std::invalid_argument("lHand does not have a pair");
+    if (!checkPair(rHand, rPair)) throw std::invalid_argument("rHand does not have a pair");
+    if (lPair[0].rank < rPair[0].rank) return true;
+    if (lPair[0].rank > rPair[0].rank) return false;
+    // Pair ranks are equal, compare non-paired cards
+
+    // We will search for the highest non-paired card in each hand, excluding these:
+    Hand lExclude(lPair.begin(), lPair.end());
+    Hand rExclude(rPair.begin(), rPair.end());
+
+    for (int i = 0; i < HoldEmGame::FLOP_COMMON_SIZE; i++) {
+        Card<HoldEmRank, Suit> lMaxCard = findMaxCardNotExcluded(lHand, lExclude);
+        Card<HoldEmRank, Suit> rMaxCard = findMaxCardNotExcluded(rHand, rExclude);
+        if (lMaxCard.rank < rMaxCard.rank) return true;
+        if (lMaxCard.rank > rMaxCard.rank) return false;
+
+        lExclude.push_back(lMaxCard);
+        rExclude.push_back(rMaxCard);
+    }
+
+    // Hands are equal
+    return false;
+}
+
+/// @brief Check if a hand with a twopair is less than another hand with a twopair
+/// @param lHand Sorted hand with a twopair
+/// @param rHand Sorted hand with a twopair
+/// @return if the rank of the higher pair of the first object is less than the rank of the higher
+/// pair of the second object, or if those are the same if the rank of the lower pair of the first
+/// object is less than the rank of the lower pair of the second object, or if those are also the
+/// same, if the non-paired card of the first object is less than that of the second object;
+bool twopairLessThan(const Hand& lHand, const Hand& rHand) {
+    Pair lPair1, lPair2, rPair1, rPair2;
+    if (!checkTwoPair(lHand, lPair1, lPair2))
+        throw std::invalid_argument("lHand does not have twopair");
+    if (!checkTwoPair(rHand, rPair1, rPair2))
+        throw std::invalid_argument("rHand does not have twopair");
+
+    // Compare higher pairs
+    Pair lpairH = max(lPair1, lPair2);
+    Pair rPairH = max(rPair1, rPair2);
+
+    if (lpairH[0].rank < rPairH[0].rank) return true;
+    if (lpairH[0].rank > rPairH[0].rank) return false;
+
+    // Higher pairs are equal, compare lower pairs
+
+    Pair lpairL = min(lPair1, lPair2);
+    Pair rPairL = min(rPair1, rPair2);
+
+    if (lpairL[0].rank < rPairL[0].rank) return true;
+    if (lpairL[0].rank > rPairL[0].rank) return false;
+
+    // Lower pairs are equal, compare non-paired cards
+
+    // We will search for the highest non-paired card in each hand, excluding these:
+    Hand lExclude(lPair1.begin(), lPair1.end());
+    lExclude.insert(lExclude.end(), lPair2.begin(), lPair2.end());
+    Hand rExclude(rPair1.begin(), rPair1.end());
+    rExclude.insert(rExclude.end(), rPair2.begin(), rPair2.end());
+
+    Card<HoldEmRank, Suit> lMaxCard = findMaxCardNotExcluded(lHand, lExclude);
+    Card<HoldEmRank, Suit> rMaxCard = findMaxCardNotExcluded(rHand, rExclude);
+
+    if (lMaxCard.rank < rMaxCard.rank) return true;
+    
+    // Hands are equal
+    return false;
 }
 
 }  // namespace
@@ -313,6 +442,49 @@ HoldEmHandRank HoldEmGame::holdem_hand_evaluation(const CardSet<HoldEmRank, Suit
     } else {
         return HoldEmHandRank::xhigh;
     }
+}
+
+bool operator<(const HoldEmGame::Player& lhs, const HoldEmGame::Player& rhs) {
+    if (lhs.handRank < rhs.handRank) return true;
+    if (lhs.handRank > rhs.handRank) return false;
+
+    // Hand ranks are equal, compare hands
+
+    const auto& handRank = lhs.handRank;
+
+    CardSet<HoldEmRank, Suit> lhsCopy(lhs.hand);
+    CardSet<HoldEmRank, Suit> rhsCopy(rhs.hand);
+
+    auto& lhsCards = lhsCopy.*CardSet<HoldEmRank, Suit>::getCards();
+    auto& rhsCards = rhsCopy.*CardSet<HoldEmRank, Suit>::getCards();
+
+    std::sort(lhsCards.begin(), lhsCards.end(),
+              [](const auto& lhs, const auto& rhs) { return compareRank(lhs, rhs); });
+    std::sort(rhsCards.begin(), rhsCards.end(),
+              [](const auto& lhs, const auto& rhs) { return compareRank(lhs, rhs); });
+
+    switch (handRank) {
+        case HoldEmHandRank::pair:
+            return pairLessThan(lhsCards, rhsCards);
+        case HoldEmHandRank::twopair:
+            return twopairLessThan(lhsCards, rhsCards);
+        case HoldEmHandRank::threeofakind:
+
+        case HoldEmHandRank::straight:
+
+        case HoldEmHandRank::flush:
+
+        case HoldEmHandRank::fullhouse:
+
+        case HoldEmHandRank::fourofakind:
+
+        case HoldEmHandRank::straightflush:
+
+        case HoldEmHandRank::undefined:
+        case HoldEmHandRank::xhigh:
+        return false;
+    }
+    return false;
 }
 
 std::ostream& operator<<(std::ostream& os, const HoldEmHandRank& rank) {

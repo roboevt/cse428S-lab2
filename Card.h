@@ -21,6 +21,7 @@ struct Card {
     R rank;
     S suit;
     Card(R rank, S suit);
+    Card() = default;
 };
 
 template <typename R, typename S>
