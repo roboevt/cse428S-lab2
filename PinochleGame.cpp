@@ -44,7 +44,7 @@ void PinochleGame::printState() const {
         for(auto meld : melds) {
             std::cout << meld << ", ";
         }
-        endl(endl(std::cout));
+        endl(std::cout);
     }
 }
 

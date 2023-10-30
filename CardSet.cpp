@@ -18,6 +18,7 @@ bool CardSet<R, S>::is_empty() const {
 
 template<typename R, typename S>
 CardSet<R, S>& CardSet<R, S>::operator>>(CardSet<R, S>& other) {
+    // Error checking
     if(is_empty()) throw std::runtime_error("Cannot move cards from empty set");
 
     other.cards.push_back(cards.back());
@@ -31,6 +32,3 @@ std::vector<Card<R, S> > CardSet<R, S>::*CardSet<R, S>::getCards() {  // What a 
     return &CardSet::cards;
 }
 
-// Deep copy constructor (vector's copy constructor is deep)
-template<typename R, typename S>
-CardSet<R, S>::CardSet(const CardSet<R, S>& other) : cards(other.cards) {}

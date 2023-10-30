@@ -19,7 +19,7 @@ constexpr int SUCCESS = 0;
 constexpr int INVALID_ARGS = 1;
 
 void usage() {
-    std::cout << "Usage: lab1 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>"
+    std::cout << "Usage: lab2 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>"
               << std::endl
               << "Pinocle requires 4 players, HoldEm requires 2-9 players" << std::endl;
 }

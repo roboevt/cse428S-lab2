@@ -45,7 +45,11 @@ class HoldEmGame : public Game {
     virtual void deal();
 
     /// @brief Plays rounds of the game until the user decides to quit
+    /// @return 0 if the game was played successfully
     virtual int play();
+
+    /// @brief Evaluates the hands of all players and prints thir current hand rank
+    virtual void evaluate();
 
     HoldEmHandRank holdem_hand_evaluation(const CardSet<HoldEmRank, Suit>& hand) const;
 
@@ -61,9 +65,10 @@ class HoldEmGame : public Game {
 
     struct Player{
         CardSet<HoldEmRank, Suit> hand;
-        std::string& name;
+        std::string name;
         HoldEmHandRank handRank;
         Player(CardSet<HoldEmRank, Suit> hand, std::string& name, HoldEmHandRank handRank) : hand(hand), name(name), handRank(handRank) {}
+        // Player() = default;
     };
 };
 

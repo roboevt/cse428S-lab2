@@ -3,14 +3,15 @@ Lab 2 Eric Todd (490360) e.todd@wustl.edu
 Description:
     This program is a card game simulator which supports Pinochle and Texas HoldEm. It takes in a game type and player names as command line arguments. 
     It then deals cards to the players and prints them. Then it asks if the user wants to end the game. If not, it deals another board and prints it, 
-    continueing for as long as the user wants to play.
+    continueing for as long as the user wants to play. In either game mode it will evaluate the board state and display the results to the user.
 
 Compilation:
     make
-    or: g++ -o lab1 -DUNIX   -Wall -W -g -std=c++17 -DTEMPLATE_HEADERS_INCLUDE_SOURCE Suit.cpp PinochleDeck.cpp HoldEmDeck.cpp main.cpp Game.cpp PinochleGame.cpp HoldEmGame.cpp
+    or: g++ -o lab2 -DUNIX   -Wall -W -g -std=c++17 -DTEMPLATE_HEADERS_INCLUDE_SOURCE Suit.cpp PinochleDeck.cpp HoldEmDeck.cpp main.cpp Game.cpp PinochleGame.cpp HoldEmGame.cpp
 
 Usage:
-    "Usage: lab1 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>"
+    "Usage: lab2 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>"
+            "Pinocle requires 4 players, HoldEm requires 2-9 players"
 
 Design:
     The program is designed to be extensible to other card games. The Game class is an abstract class which defines the interface for a card game. 
@@ -19,162 +20,180 @@ Design:
     and Suit. 
 
 Learning:
-    I learned a lot about writing templates in c++. In particular, how to split them between header and source files, something I have struggled with in the past.
-    This was also a good experience in a larger project, split between many files, even if each file is relatively simple. It is helpful to think about how to tie
-    different pieces of code together and where to split them apart.
+    I learned a lot about working with a larger code base with a lot of logic. Adding in the game logic adds a lot of complexity, and I tried very hard
+    to keep the code clean and readable. In PinochleGame::suit_independent_evaluation() I wrote a few helper lambdas that allowed me to give a descriptive
+    name to some potentially confusing operations. It lead to some very nice expressions such as:
+
+        if(hand_has_both_of_each_suit(PinochleRank::ace)) { // Thousand Aces
+            melds.push_back(PinochleMelds::thousandaces);
+        } else if(hand_has_one_of_each_suit(PinochleRank::ace)) { // Hundred Aces
+            melds.push_back(PinochleMelds::hundredaces);
+        }
+    
+    which I am particularly proud of. The code almost reads like an english sentence that perfectly explains it's function. 
+
+    HoldEmGame::holdem_hand_evaluation() was a much more complicated function to write, and I ended up splitting it into many different functions, one
+    for each of the possible hand ranks. I spent the majority of my time and effort in HoldEmGame.cpp working on this problem and trying to keep code
+    duplication to a minimum. To this end I ended up adding additional output parameters to the check functions to report more information about the
+    result, beyond the return value of true or false. For example, checkPair sets a parameter reference to the pair it finds. This was crucial for the
+    operator< code. I also wrote an overloaded version of these check functions without the out parameter that just forwards to the base function so
+    that I could use them when I just needed to check something and didn't care about any more information.
+
+    Overall I had to think about, plan for, and rework this code quite a bit to keep it as clean and efficient as I could, and I am very proud of the
+    result.
 
 Compilation Errors:
-    Deck.cpp:9:18: error: no matching function for call to ‘std::mersenne_twister_engine<long unsigned int, 32, 624, 397, 31, 2567483615, 11, 4294967295, 7, 2636928640, 15, 4022730752, 18, 1812433253>::mersenne_twister_engine(std::random_device&)’
-    9 |     std::mt19937 gen(rng);
-      |                  ^~~
-    In file included from /usr/include/c++/11/random:49,
-                    from Deck.cpp:3,
-                    from Deck.h:16,
-                    from PinochleDeck.h:8,
-                    from PinochleGame.h:4,
-                    from PinochleGame.cpp:1:
-    /usr/include/c++/11/bits/random.h:541:9: note: candidate: ‘template<class _Sseq, class> std::mersenne_twister_engine<_UIntType, __w, __n, __m, __r, __a, __u, __d, __s, __b, __t, __c, __l, __f>::mersenne_twister_engine(_Sseq&) [with _Sseq = _Sseq; <template-parameter-2-2> = <template-parameter-1-2>; _UIntType = long unsigned int; long unsigned int __w = 32; long unsigned int __n = 624; long unsigned int __m = 397; long unsigned int __r = 31; _UIntType __a = 2567483615; long unsigned int __u = 11; _UIntType __d = 4294967295; long unsigned int __s = 7; _UIntType __b = 2636928640; long unsigned int __t = 15; _UIntType __c = 4022730752; long unsigned int __l = 18; _UIntType __f = 1812433253]’
-    541 |         mersenne_twister_engine(_Sseq& __q)
-        |         ^~~~~~~~~~~~~~~~~~~~~~~
-    /usr/include/c++/11/bits/random.h:541:9: note:   template argument deduction/substitution failed:
-    /usr/include/c++/11/bits/random.h: In substitution of ‘template<class _UIntType, long unsigned int __w, long unsigned int __n, long unsigned int __m, long unsigned int __r, _UIntType __a, long unsigned int __u, _UIntType __d, long unsigned int __s, _UIntType __b, long unsigned int __t, _UIntType __c, long unsigned int __l, _UIntType __f> template<class _Sseq> using _If_seed_seq = typename std::enable_if<std::__detail::__is_seed_seq<_Sseq, std::mersenne_twister_engine<_UIntType, __w, __n, __m, __r, __a, __u, __d, __s, __b, __t, __c, __l, __f>, _UIntType>::value>::type [with _Sseq = std::random_device; _UIntType = long unsigned int; long unsigned int __w = 32; long unsigned int __n = 624; long unsigned int __m = 397; long unsigned int __r = 31; _UIntType __a = 2567483615; long unsigned int __u = 11; _UIntType __d = 4294967295; long unsigned int __s = 7; _UIntType __b = 2636928640; long unsigned int __t = 15; _UIntType __c = 4022730752; long unsigned int __l = 18; _UIntType __f = 1812433253]’:
-    /usr/include/c++/11/bits/random.h:539:32:   required from ‘void Deck<R, S>::shuffle() [with R = PinochleRank; S = Suit]’
-    PinochleGame.cpp:8:17:   required from here
-    /usr/include/c++/11/bits/random.h:502:15: error: ‘class std::random_device’ has no member named ‘generate’     
-    502 |         using _If_seed_seq = typename enable_if<__detail::__is_seed_seq<
-        |               ^~~~~~~~~~~~
+    PinochleDeck.cpp: In constructor ‘PinochleDeck::PinochleDeck()’:
+    PinochleDeck.cpp:3:28: error: use of deleted function ‘Deck<PinochleRank, Suit>::Deck()’
+        3 | PinochleDeck::PinochleDeck() {
+        |                            ^
+    In file included from PinochleDeck.h:10,
+                    from PinochleDeck.cpp:1:
+    Deck.h:11:7: note: ‘Deck<PinochleRank, Suit>::Deck()’ is implicitly deleted because the default definition would be ill-formed:
+    11 | class Deck : public CardSet<R, S> {
+        |       ^~~~
 
-   Fixed: RNG generator must be passed invocation of rng (rng()), not (rng)
+    Fixed by adding default constructor to CardSet, required for sorting
 
-    /usr/include/c++/11/ext/new_allocator.h:162:11: error: invalid conversion from ‘char**’ to ‘const char**’ [-fpermissive]
-    162 |         { ::new((void *)__p) _Up(std::forward<_Args>(__args)...); }
-        |           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        |           |
-        |           char**
-    In file included from main.cpp:5:
-    HoldEmGame.h:25:45: note:   initializing argument 2 of ‘HoldEmGame::HoldEmGame(int, const char**)’
-    25 |     HoldEmGame(int numPlayers, const char** playerNames);
-        |                                ~~~~~~~~~~~~~^~~~~~~~~~~
-    make: *** [Makefile:61: lab1] Error 1
+    In file included from HoldEmGame.cpp:4:
+    HoldEmGame.h: In instantiation of ‘void std::__insertion_sort(_RandomAccessIterator, _RandomAccessIterator, _Compare) [with _RandomAccessIterator = __gnu_cxx::__normal_iterator<HoldEmGame::Player*, std::vector<HoldEmGame::Player> >; _Compare = __gnu_cxx::__ops::_Iter_less_iter]’:
+    /usr/include/c++/11/bits/stl_algo.h:1866:25:   required from ‘void std::__final_insertion_sort(_RandomAccessIterator, _RandomAccessIterator, _Compare) [with _RandomAccessIterator = __gnu_cxx::__normal_iterator<HoldEmGame::Player*, std::vector<HoldEmGame::Player> >; _Compare = __gnu_cxx::__ops::_Iter_less_iter]’
+    /usr/include/c++/11/bits/stl_algo.h:1957:31:   required from ‘void std::__sort(_RandomAccessIterator, _RandomAccessIterator, _Compare) [with _RandomAccessIterator = __gnu_cxx::__normal_iterator<HoldEmGame::Player*, std::vector<HoldEmGame::Player> >; _Compare = __gnu_cxx::__ops::_Iter_less_iter]’
+    /usr/include/c++/11/bits/stl_algo.h:4842:18:   required from ‘void std::sort(_RAIter, _RAIter) [with _RAIter = __gnu_cxx::__normal_iterator<HoldEmGame::Player*, std::vector<HoldEmGame::Player> >]’
+    HoldEmGame.cpp:85:14:   required from here
+    HoldEmGame.h:66:12: warning: implicitly-declared ‘CardSet<HoldEmRank, Suit>& CardSet<HoldEmRank, Suit>::operator=(const CardSet<HoldEmRank, Suit>&)’ is deprecated [-Wdeprecated-copy]
+    66 |     struct Player{
+        |            ^~~~~~
+    In file included from CardSet.h:42,
+                    from Deck.h:8,
+                    from HoldEmDeck.h:10,
+                    from HoldEmGame.h:8,
+                    from HoldEmGame.cpp:4:
+    CardSet.cpp:36:1: note: because ‘CardSet<HoldEmRank, Suit>’ has user-provided ‘CardSet<R, S>::CardSet(const CardSet<R, S>&) [with R = HoldEmRank; S = Suit]’
+    36 | CardSet<R, S>::CardSet(const CardSet<R, S>& other) : cards(other.cards) {}
+        | ^~~~~~~~~~~~~
 
-    Note (https://stackoverflow.com/questions/2463473/why-am-i-getting-an-error-converting-a-float-to-const-float)
-    Fixed by making all char** const char** in main.cpp (parameters to main, usage, create, checkArgs)
+    Fixed by using default copy constructor for CardSet. This still performs a deep copy as the copy constructor of a vector performs a deep copy.
 
-    /usr/bin/ld: /tmp/ccwIirhv.o: warning: relocation against `_ZTV10HoldEmGame' in read-only section `.text._ZN10HoldEmGameD2Ev[_ZN10HoldEmGameD5Ev]'
-    /usr/bin/ld: /tmp/ccwIirhv.o: in function `void __gnu_cxx::new_allocator<PinochleGame>::construct<PinochleGame, int&, char const**&>(PinochleGame*, int&, char const**&)':
-    /usr/include/c++/11/ext/new_allocator.h:162: undefined reference to `PinochleGame::PinochleGame(int, char const**)'
-    /usr/bin/ld: /tmp/ccwIirhv.o: in function `void __gnu_cxx::new_allocator<HoldEmGame>::construct<HoldEmGame, int&, char const**&>(HoldEmGame*, int&, char const**&)':
-    /usr/include/c++/11/ext/new_allocator.h:162: undefined reference to `HoldEmGame::HoldEmGame(int, char const**)'
-    /usr/bin/ld: /tmp/ccwIirhv.o: in function `HoldEmGame::~HoldEmGame()':
-    /mnt/c/dev/428/lab1/HoldEmGame.h:8: undefined reference to `vtable for HoldEmGame'
-    /usr/bin/ld: /tmp/ccwIirhv.o: in function `PinochleGame::~PinochleGame()':
-    /mnt/c/dev/428/lab1/PinochleGame.h:6: undefined reference to `vtable for PinochleGame'
-    /usr/bin/ld: warning: creating DT_TEXTREL in a PIE
-    collect2: error: ld returned 1 exit status
-    make: *** [Makefile:61: lab1] Error 1
-
-    Fixed by adding (Game.cpp PinochleGame.cpp HoldEmGame.cpp) to CMPL_SRCS in Makefile
-
-Compilation Warnings:
-    Many warning: comparison of integer expressions of different signedness: ‘int’ and ‘std::vector<CardSet<PinochleRank, Suit> >::size_type’ {aka ‘long unsigned int’} [-Wsign-compare]
-   10 |         for(int j = 0; j < hands.size(); j++) 
-   in for loops
-
-   Fixed by changing int to size_t when comparing to std::vector::size() in a loop.
-
-Bugs:
-    HoldEm printing one state ahead. Example:
-        roboevt@DESKTOP-JHQK8MN:/mnt/c/dev/428/lab1$ ./lab1 HoldEm a b c d
-        a: 
-        b: 
-        c: 
-        d: 
-        BOARD(flop):
-        BOARD(turn): 6C AD 3H
-        BOARD(river): 6C AD 3H 10D
-        Would you like to end the game? (yes/no):
-    Caused by state being incremented in deal, before printing.
-    Fixed by printing previous step (print player hands when in flop, flop board when in turn, etc.)
 
 Testing:
     No args:
-        ./lab1
-        Usage: lab1 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>
+        ./lab2
+        Usage: lab2 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>
         Pinocle requires 4 players, HoldEm requires 2-9 players
         echo $?
         1
     Invalid game:
-        ./lab1 TicTacToe
-        Usage: lab1 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>
+        ./lab2 TicTacToe
+        Usage: lab2 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>
         Pinocle requires 4 players, HoldEm requires 2-9 players
         echo $?
         1
     No player names:
-        ./lab1 Pinochle
-        Usage: lab1 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>
+        ./lab2 Pinochle
+        Usage: lab2 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>
         Pinocle requires 4 players, HoldEm requires 2-9 players
         echo $?
         1
     Wrong number of player names:
-        ./lab1 Pinochle bob joe
+        ./lab2 Pinochle bob joe
         Usage: lab1 <Game(Pinochle|HoldEm)> <player1> <player2> ... <player9>
         Pinocle requires 4 players, HoldEm requires 2-9 players
         echo $?
         1
     Pinochle works:
-        ./lab1 Pinochle bob joe mary john
-        bob: 9S JH QC
-        joe: 9C TS KS
-        mary: AH QC JD
-        john: JC 9C KH
+        ./lab2 Pinochle bob joe mary john
+        bob: 9H QS JS 9C KD TH KD JD 9C AC TS AS 9C 9C 9H JD JS QS KD KD TH TS AC AS
+                Melds: Pinochle 40 points,
+        joe: AS AH QH AC KH AH TH QH AD 9D KC QS 9D QH QH QS KC KH TH AC AD AH AH AS
+                Melds: Hundred Aces 100 points,
+        mary: AD 9H 9D JC KH QD QC KS TC JD 9S QC 9D 9H 9S JC JD QC QC QD KH KS TC AD
+                Melds:
+        john: JH KS JS TC KC JH TS TD TD JC 9S QD 9S JC JH JH JS QD KC KS TC TD TD TS
+                Melds:
         Would you like to end the game? (yes/no): yes
-        echo $?
+        roboevt@DESKTOP-JHQK8MN:/mnt/c/dev/428/lab2$ echo $?
         0
     HoldEm works:
-        ./lab1 HoldEm bob joe mary john
-        bob: JD 8D
-        joe: 5H 10C
-        mary: 5D 3C
-        john: 3S 8C
-        BOARD(flop): KH 6C KC
-        BOARD(turn): KH 6C KC AH
-        BOARD(river): KH 6C KC AH KD
+        ./lab2 HoldEm bob joe mary john
+        bob: AH 10C
+        joe: 6C 4H
+        mary: JD 6H
+        john: KC JS
+        BOARD(flop): 4C 7C QD
+        joe:    Cards: 6C 4H QD 7C 4C    Rank: Pair
+        bob:    Cards: AH 10C QD 7C 4C   Rank: X High
+        john:   Cards: KC JS QD 7C 4C    Rank: X High
+        mary:   Cards: JD 6H QD 7C 4C    Rank: X High
+        BOARD(turn): 4C 7C QD 9C
+        BOARD(river): 4C 7C QD 9C 6D
         Would you like to end the game? (yes/no): yes
-        echo $?
+        roboevt@DESKTOP-JHQK8MN:/mnt/c/dev/428/lab2$ echo $?
         0
-    Multiple runs (different cards):
-        ./lab1 HoldEm bob joe mary john
-        bob: 10C 8C
-        joe: 2D 10D
-        mary: 2C 8S
-        john: JH KD
-        BOARD(flop): 4D KC 3D
-        BOARD(turn): 4D KC 3D QS
-        BOARD(river): 4D KC 3D QS 3C
+    HoldEm Multiple runs (different cards and correctly identifying hand ranks):
+        ./lab2 HoldEm bob joe mary john
+        bob: KD 5C
+        joe: 4H 8H
+        mary: 10H AC
+        john: 9H 9S
+        BOARD(flop): 8D 9C KS
+        john:   Cards: 9H 9S KS 9C 8D    Rank: Three of a Kind
+        bob:    Cards: KD 5C KS 9C 8D    Rank: Pair
+        joe:    Cards: 4H 8H KS 9C 8D    Rank: Pair
+        mary:   Cards: 10H AC KS 9C 8D   Rank: X High
+        BOARD(turn): 8D 9C KS 7C
+        BOARD(river): 8D 9C KS 7C QC
         Would you like to end the game? (yes/no): no
-        bob: QC 9S
-        joe: 3C 6D
-        mary: 5C 10C
-        john: KD KH
-        BOARD(flop): 7C 3H 7S
-        BOARD(turn): 7C 3H 7S 6S
-        BOARD(river): 7C 3H 7S 6S AH
+        bob: 6D 9D
+        joe: 3D 7H
+        mary: 3C 2C
+        john: 3H 5S
+        BOARD(flop): 5C 2S QH
+        john:   Cards: 3H 5S QH 2S 5C    Rank: Pair
+        mary:   Cards: 3C 2C QH 2S 5C    Rank: Pair
+        bob:    Cards: 6D 9D QH 2S 5C    Rank: X High
+        joe:    Cards: 3D 7H QH 2S 5C    Rank: X High
+        BOARD(turn): 5C 2S QH 4C
+        BOARD(river): 5C 2S QH 4C 4H
         Would you like to end the game? (yes/no): no
-        bob: 7H AH
-        joe: 9D 10H
-        mary: 5C 3C
-        john: 5S QC
-        BOARD(flop): 3S KH AS
-        BOARD(turn): 3S KH AS 2D
-        BOARD(river): 3S KH AS 2D 8S
-        Would you like to end the game? (yes/no): no
-        bob: 6H 4C
-        joe: QH QS
-        mary: 5S 6D
-        john: KS 9C
-        BOARD(flop): AC 5C 3D
-        BOARD(turn): AC 5C 3D 5D
-        BOARD(river): AC 5C 3D 5D 8D
+        bob: 5C 10H
+        joe: 3C 5S
+        mary: 8D JS
+        john: 6C QS
+        BOARD(flop): 6D 9D 10S
+        bob:    Cards: 5C 10H 10S 9D 6D          Rank: Pair
+        john:   Cards: 6C QS 10S 9D 6D   Rank: Pair
+        mary:   Cards: 8D JS 10S 9D 6D   Rank: X High
+        joe:    Cards: 3C 5S 10S 9D 6D   Rank: X High
+        BOARD(turn): 6D 9D 10S AD
+        BOARD(river): 6D 9D 10S AD 5H
         Would you like to end the game? (yes/no): yes
-        echo $?
-        0
+    Pinochle Multiple runs (different cards and correctly identifying melds):
+        ./lab2 Pinochle bob joe mary john
+        bob: TS JC KH TS TC JC TD 9S KC 9H AC AD 9H 9S JC JC KC KH TC TD TS TS AC AD
+                Melds:
+        joe: TC QC QS JD JH JD KD QD QH KD QH AC JD JD JH QC QD QH QH QS KD KD TC AC
+                Melds: Sixty Queens 60 points, Pinochle 40 points,
+        mary: TD KC JS AH AS 9H JH 9D AH QS 9C 9D 9C 9D 9D 9H JH JS QS KC TD AH AH AS
+                Melds:
+        john: TH AS 9S AD QC QD 9C JS KS KH KS TH 9C 9S JS QC QD KH KS KS TH TH AD AS
+                Melds:
+        Would you like to end the game? (yes/no): no
+        bob: AD TC 9H 9C AD 9C 9S TS QC AC TD AH 9C 9C 9H 9S QC TC TD TS AC AD AD AH
+                Melds:
+        joe: KC TS KH TH TC KD AS JC QC KS JS QS JC JS QC QS KC KD KH KS TC TH TS AS
+                Melds: Eighty Kings 80 points,
+        mary: AC 9H KD 9S 9D 9D AH QD QD KC KS QS 9D 9D 9H 9S QD QD QS KC KD KS AC AH
+                Melds:
+        john: TH AS JH KH JD JC QH QH JH TD JD JS JC JD JD JH JH JS QH QH KH TD TH AS
+                Melds: Forty Jacks 40 points,
+        Would you like to end the game? (yes/no): no
+        bob: TS QH JH KD 9S JS 9C JC JD TS AS AC 9C 9S JC JD JH JS QH KD TS TS AC AS
+                Melds: Forty Jacks 40 points,
+        joe: QC JD QD 9D AD KH JH KS JS AH TH KC 9D JD JH JS QC QD KC KH KS TH AD AH
+                Melds:
+        mary: AC KS 9C JC KC QC 9H AH AD TC QS QS 9C 9H JC QC QS QS KC KS TC AC AD AH
+                Melds:
+        john: QD AS TH TC KD QH 9S TD 9H 9D TD KH 9D 9H 9S QD QH KD KH TC TD TD TH AS
+                Melds:
+        Would you like to end the game? (yes/no): yes

@@ -54,11 +54,43 @@ int HoldEmGame::play() {
         while (state != HoldEmState::undefined) {  // Move through each state
             deal();
             printState();
+
+            // Evaluate hands after the flop
+            if (state == HoldEmState::turn) evaluate();
         }
+
         collectCards();
     } while (!promptUserEnd());
 
     return 0;
+}
+
+void HoldEmGame::evaluate() {
+    // all Players
+    std::vector<HoldEmGame::Player> playerHands;
+    for (size_t i = 0; i < hands.size(); i++) {
+        CardSet<HoldEmRank, Suit> hand = hands[i];  // Copy hand
+        auto commonCopy = commonCards;
+        while (!commonCopy.is_empty()) commonCopy >> hand;  // Add all common cards to hand
+
+        // Evaluate current hand
+        HoldEmHandRank handRank = holdem_hand_evaluation(hand);
+
+        // Create player object
+        Player player(hand, players[i], handRank);
+        playerHands.push_back(player);
+    }
+
+    // Sort player hands by handrank
+    std::sort(playerHands.begin(), playerHands.end());
+
+    // Display results
+    for (int i = playerHands.size() - 1; i >= 0; i--) {
+        std::cout << playerHands[i].name << ": "
+                  << "\tCards: ";
+        playerHands[i].hand.print(std::cout, FINAL_HAND_SIZE + HAND_SIZE + 1);
+        std::cout << "\t Rank: " << playerHands[i].handRank << std::endl;
+    }
 }
 
 void HoldEmGame::printState() const {
@@ -91,21 +123,23 @@ void HoldEmGame::printState() const {
 }
 
 void HoldEmGame::collectCards() {
+    // Move all cards from hands to deck
     for (auto& hand : hands) {
         while (!hand.is_empty()) {
             hand >> deck;
         }
     }
+    // Move all cards from commonCards to deck
     while (!commonCards.is_empty()) {
         commonCards >> deck;
     }
 }
 
 // Anonymous namespace for helper functions, keeps them from being visible outside this file (like
-// static)
+// static but apparently better style)
 namespace {
 
-// Aliases to simplify helper function signatures
+// Aliases to simplify function signatures
 using Pair = std::array<Card<HoldEmRank, Suit>, 2>;
 using Hand = std::vector<Card<HoldEmRank, Suit>>;
 
@@ -557,7 +591,7 @@ bool straightflushLessThan(const Hand& lHand, const Hand& rHand) {
     return straightLessThan(lHand, rHand);  // Comparison is the same as a normal straight
 }
 
-}  // namespace
+}  // anonymous namespace
 
 HoldEmHandRank HoldEmGame::holdem_hand_evaluation(const CardSet<HoldEmRank, Suit>& hand) const {
     CardSet<HoldEmRank, Suit> handCopy(hand);

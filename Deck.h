@@ -9,6 +9,8 @@
 
 template <typename R, typename S>
 class Deck : public CardSet<R, S> {
+    static constexpr int SHUFFLE_COUNT = 10;
+
    public:
     /// @brief Randomly shuffle the cards in this deck
     void shuffle();

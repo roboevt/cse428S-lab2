@@ -38,6 +38,9 @@ class PinochleGame : public Game {
     /// @brief Collects all cards from the players and puts them back in the deck.
     void collectCards();
 
+    /// @brief Evaluates the hands of all players and prints their current hand rank.
+    /// @param hand The hand to evaluate
+    /// @param melds Output parameter to store the melds in
     void suit_independent_evaluation(const CardSet<PinochleRank, Suit>& hand, std::vector<PinochleMelds>& melds) const;
 
     static constexpr int PACKET_SIZE = 30;

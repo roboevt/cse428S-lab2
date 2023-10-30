@@ -1,21 +1,24 @@
-//Deck.cpp    Eric Todd   e.todd@wustl.edu    Definitions for Deck shuffle and collect function.
+// Deck.cpp    Eric Todd   e.todd@wustl.edu    Definitions for Deck shuffle and collect function.
 
 #include "Deck.h"
 
-#include <random>
 #include <algorithm>
+#include <random>
 
 template <typename R, typename S>
-void Deck<R,S>::shuffle() {
+void Deck<R, S>::shuffle() {
     std::random_device rng;
     std::mt19937 gen(rng());
 
-    std::shuffle(CardSet<R,S>::cards.begin(), CardSet<R,S>::cards.end(), gen);
+    // Shuffle the deck SHUFFLE_COUNT times for good measure
+    for (int i = 0; i < SHUFFLE_COUNT; i++) {
+        std::shuffle(CardSet<R, S>::cards.begin(), CardSet<R, S>::cards.end(), gen);
+    }
 }
 
 template <typename R, typename S>
-void Deck<R,S>::collect(CardSet<R, S>& other) {
-    while(!other.is_empty()) {
+void Deck<R, S>::collect(CardSet<R, S>& other) {
+    while (!other.is_empty()) {
         other >> *this;
     }
 }

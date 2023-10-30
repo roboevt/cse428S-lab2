@@ -30,9 +30,9 @@ class CardSet {
     /// @return Pointer to the cards vector
     static std::vector<Card<R, S> > CardSet::*getCards();
 
-    /// @brief Copy constructor
+    /// @brief Copy constructor (Creates a deep copy of the cards vector)
     /// @param other Card set to copy
-    CardSet<R, S>(const CardSet<R, S>& other);
+    CardSet<R, S>(const CardSet<R, S>& other) = default;
 
     /// @brief Default constructor
     CardSet<R, S>() = default;
